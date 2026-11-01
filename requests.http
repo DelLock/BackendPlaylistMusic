@@ -1,49 +1,50 @@
-### 1. Проверка доступности сервиса (Health Check)
+### Health Check
 GET http://127.0.0.1:8000/health
 
-### 2. Создать первый плейлист
-POST http://127.0.0.1:8000/api/items
+### 1. Создать плейлист
+POST http://127.0.0.1:8000/api/playlists
 Content-Type: application/json
 
 {
-    "name": "Рок и Метал",
+    "name": "Мой Плейлист #1",
     "author": "Денис"
 }
 
-### 3. Создать второй плейлист
-POST http://127.0.0.1:8000/api/items
+### 2. Получить список всех плейлистов
+GET http://127.0.0.1:8000/api/playlists
+
+### 3. Добавить первый трек
+POST http://127.0.0.1:8000/api/playlists/1/tracks
 Content-Type: application/json
 
 {
-    "name": "Джаз и Блюз",
-    "author": "Алексей"
+    "title": "Bohemian Rhapsody",
+    "artist": "Queen",
+    "duration": 354
 }
 
-### 4. Получить список всех плейлистов
-GET http://127.0.0.1:8000/api/items
-
-### 5. Получить плейлист по ID (успешно)
-GET http://127.0.0.1:8000/api/items/4
-
-### 6. Получить несуществующий плейлист (ожидается 404 Not Found)
-GET http://127.0.0.1:8000/api/items/999
-
-### 7. Частично обновить плейлист (PATCH)
-PATCH http://127.0.0.1:8000/api/items/9
+### 4. Проверка правила 409 (Попытка добавить дубликат трека)
+POST http://127.0.0.1:8000/api/playlists/1/tracks
 Content-Type: application/json
 
 {
-    "name": "Русский и Зарубежный Рок"
+    "title": "Bohemian Rhapsody",
+    "artist": "Queen",
+    "duration": 354
 }
 
-### 8. Попытка создать плейлист с пустым именем (ожидается 400 Bad Request)
-POST http://127.0.0.1:8000/api/items
+### 5. Добавить второй трек
+POST http://127.0.0.1:8000/api/playlists/1/tracks
 Content-Type: application/json
 
 {
-    "name": "   ",
-    "author": "Денис"
+    "title": "Radio Ga Ga",
+    "artist": "Queen",
+    "duration": 343
 }
 
-### 9. Удалить плейлист по ID (ожидается 204 No Content)
-DELETE http://127.0.0.1:8000/api/items/10
+### 6. Получить треки плейлиста
+GET http://127.0.0.1:8000/api/playlists/1/tracks
+
+### 7. Получить статистику плейлиста
+GET http://127.0.0.1:8000/api/playlists/1/stats

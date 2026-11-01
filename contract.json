@@ -10,5 +10,15 @@
   "update": {
     "name": "Classic Rock"
   },
-  "required_field": "name"
+  "required_field": "name",
+  "text_field": "name",
+  "child": {
+    "resource": "/tracks",
+    "path": "/tracks",
+    "create": {
+      "title": "Bohemian Rhapsody",
+      "artist": "Queen",
+      "duration": 354
+    }
+  }
 }
