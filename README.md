@@ -32,16 +32,18 @@ uvicorn main:app --reload --host 127.0.0.1 --port 8000
 #### ER-диаграмма
 ```mermaid
 erDiagram
-    playlists ||--o{ tracks : "имеет"
+    playlists ||--o{ tracks : "содержит"
     playlists {
         int id PK
-        varchar name
-        varchar author
+        string name
+        string author
     }
     tracks {
         int id PK
         int playlist_id FK
-        varchar title
+        string title
+        string artist
+        int duration
     }
 ```
 #### Интерфейс
