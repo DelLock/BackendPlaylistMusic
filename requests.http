@@ -1,20 +1,39 @@
-### Health Check
-GET http://127.0.0.1:8000/health
+@base = http://localhost:8000
 
-### 1. Создать плейлист
-POST http://127.0.0.1:8000/api/playlists
+### Сервис жив?
+GET {{base}}/health
+
+### Создать плейлист
+POST {{base}}/api/playlists
 Content-Type: application/json
 
 {
-    "name": "Мой Плейлист #1",
-    "author": "Денис"
+    "name": "Rock Music",
+    "author": "Denis"
 }
 
-### 2. Получить список всех плейлистов
-GET http://127.0.0.1:8000/api/playlists
+### Список плейлистов
+GET {{base}}/api/playlists
 
-### 3. Добавить первый трек
-POST http://127.0.0.1:8000/api/playlists/1/tracks
+### Список с пагинацией и фильтром по автору
+GET {{base}}/api/playlists?limit=5&offset=0&author=Denis
+
+### Поиск по названию (без учёта регистра)
+GET {{base}}/api/playlists?q=rock
+
+### Получить один плейлист
+GET {{base}}/api/playlists/1
+
+### Изменить плейлист
+PATCH {{base}}/api/playlists/1
+Content-Type: application/json
+
+{
+    "name": "Classic Rock"
+}
+
+### Добавить трек
+POST {{base}}/api/playlists/1/tracks
 Content-Type: application/json
 
 {
@@ -23,8 +42,8 @@ Content-Type: application/json
     "duration": 354
 }
 
-### 4. Проверка правила 409 (Попытка добавить дубликат трека)
-POST http://127.0.0.1:8000/api/playlists/1/tracks
+### Тот же трек второй раз, должен быть 409
+POST {{base}}/api/playlists/1/tracks
 Content-Type: application/json
 
 {
@@ -33,18 +52,42 @@ Content-Type: application/json
     "duration": 354
 }
 
-### 5. Добавить второй трек
-POST http://127.0.0.1:8000/api/playlists/1/tracks
+### Добавить второй трек
+POST {{base}}/api/playlists/1/tracks
 Content-Type: application/json
 
 {
     "title": "Radio Ga Ga",
-    "artist": "Queen",
+    "artist": "Queenie",
     "duration": 343
 }
 
-### 6. Получить треки плейлиста
-GET http://127.0.0.1:8000/api/playlists/1/tracks
+### Список треков плейлиста
+GET {{base}}/api/playlists/1/tracks
 
-### 7. Получить статистику плейлиста
-GET http://127.0.0.1:8000/api/playlists/1/stats
+### Статистика одного плейлиста
+GET {{base}}/api/playlists/1/stats
+
+### Статистика по всем плейлистам
+GET {{base}}/api/playlists/stats
+
+### Удалить трек
+DELETE {{base}}/api/playlists/1/tracks/2
+
+### Сломанный JSON, должен быть 400
+POST {{base}}/api/playlists
+Content-Type: application/json
+
+{ "name":
+
+### Пустое обязательное поле, должен быть 400
+POST {{base}}/api/playlists
+Content-Type: application/json
+
+{ "name": "", "author": "Denis" }
+
+### Удалить плейлист
+DELETE {{base}}/api/playlists/1
+
+### После удаления должен быть 404
+GET {{base}}/api/playlists/1

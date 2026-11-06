@@ -1,24 +1,31 @@
 {
-  "baseUrl": "http://127.0.0.1:8000/api",
-  "endpoints": {
-    "items": "/items"
-  },
-  "create": {
-    "name": "Rock Music",
-    "author": "Denis"
-  },
-  "update": {
-    "name": "Classic Rock"
-  },
+  "base_url": "http://localhost:8000",
+  "resource": "playlists",
+  "id_field": "id",
+  "missing_id": "999999",
+  "list_key": null,
+  "create": { "name": "Rock Music", "author": "Denis" },
+  "update": { "name": "Classic Rock" },
   "required_field": "name",
+  "errors": [
+    { "body": { "name": "" }, "field": "name" },
+    { "body": { "author": "" }, "field": "author" }
+  ],
+  "filter": { "param": "author", "value": "Denis", "other": "Ivan" },
   "text_field": "name",
+  "search": { "param": "q", "field": "name" },
   "child": {
-    "resource": "/tracks",
-    "path": "/tracks",
-    "create": {
-      "title": "Bohemian Rhapsody",
-      "artist": "Queen",
-      "duration": 354
-    }
-  }
+    "resource": "tracks",
+    "create": { "title": "Bohemian Rhapsody", "artist": "Queen", "duration": 354 },
+    "parent_field": "playlist_id"
+  },
+  "rule": {
+    "description": "Нельзя добавить в плейлист один и тот же трек дважды",
+    "setup": [
+      { "method": "POST", "path": "/api/playlists/{id}/tracks", "body": { "title": "Radio Ga Ga", "artist": "Queen", "duration": 343 } }
+    ],
+    "violate": { "method": "POST", "path": "/api/playlists/{id}/tracks", "body": { "title": "Radio Ga Ga", "artist": "Queen", "duration": 343 } },
+    "expect_status": 409
+  },
+  "stats_path": "/api/playlists/stats"
 }

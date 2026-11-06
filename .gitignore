@@ -13,16 +13,6 @@ venv/
 node_modules/
 dist/
 
-# Go
-/bin/
-
-# Java / C#
-target/
-build/
-bin/
-obj/
-*.class
-
 # IDE и ОС
 .idea/
 .vscode/*
@@ -33,11 +23,3 @@ Thumbs.db
 # Базы
 *.db
 *.sqlite3
-
-#БД
-.venv/
-__pycache__/
-*.pyc
-.env
-*.db
-app.db
