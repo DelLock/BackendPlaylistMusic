@@ -1,49 +1,93 @@
-### 1. Проверка доступности сервиса (Health Check)
-GET http://127.0.0.1:8000/health
+@base = http://localhost:8000
 
-### 2. Создать первый плейлист
-POST http://127.0.0.1:8000/api/items
+### Сервис жив?
+GET {{base}}/health
+
+### Создать плейлист
+POST {{base}}/api/playlists
 Content-Type: application/json
 
 {
-    "name": "Рок и Метал",
-    "author": "Денис"
+    "name": "Rock Music",
+    "author": "Denis"
 }
 
-### 3. Создать второй плейлист
-POST http://127.0.0.1:8000/api/items
+### Список плейлистов
+GET {{base}}/api/playlists
+
+### Список с пагинацией и фильтром по автору
+GET {{base}}/api/playlists?limit=5&offset=0&author=Denis
+
+### Поиск по названию (без учёта регистра)
+GET {{base}}/api/playlists?q=rock
+
+### Получить один плейлист
+GET {{base}}/api/playlists/1
+
+### Изменить плейлист
+PATCH {{base}}/api/playlists/1
 Content-Type: application/json
 
 {
-    "name": "Джаз и Блюз",
-    "author": "Алексей"
+    "name": "Classic Rock"
 }
 
-### 4. Получить список всех плейлистов
-GET http://127.0.0.1:8000/api/items
-
-### 5. Получить плейлист по ID (успешно)
-GET http://127.0.0.1:8000/api/items/4
-
-### 6. Получить несуществующий плейлист (ожидается 404 Not Found)
-GET http://127.0.0.1:8000/api/items/999
-
-### 7. Частично обновить плейлист (PATCH)
-PATCH http://127.0.0.1:8000/api/items/9
+### Добавить трек
+POST {{base}}/api/playlists/1/tracks
 Content-Type: application/json
 
 {
-    "name": "Русский и Зарубежный Рок"
+    "title": "Bohemian Rhapsody",
+    "artist": "Queen",
+    "duration": 354
 }
 
-### 8. Попытка создать плейлист с пустым именем (ожидается 400 Bad Request)
-POST http://127.0.0.1:8000/api/items
+### Тот же трек второй раз, должен быть 409
+POST {{base}}/api/playlists/1/tracks
 Content-Type: application/json
 
 {
-    "name": "   ",
-    "author": "Денис"
+    "title": "Bohemian Rhapsody",
+    "artist": "Queen",
+    "duration": 354
 }
 
-### 9. Удалить плейлист по ID (ожидается 204 No Content)
-DELETE http://127.0.0.1:8000/api/items/10
+### Добавить второй трек
+POST {{base}}/api/playlists/1/tracks
+Content-Type: application/json
+
+{
+    "title": "Radio Ga Ga",
+    "artist": "Queenie",
+    "duration": 343
+}
+
+### Список треков плейлиста
+GET {{base}}/api/playlists/1/tracks
+
+### Статистика одного плейлиста
+GET {{base}}/api/playlists/1/stats
+
+### Статистика по всем плейлистам
+GET {{base}}/api/playlists/stats
+
+### Удалить трек
+DELETE {{base}}/api/playlists/1/tracks/2
+
+### Сломанный JSON, должен быть 400
+POST {{base}}/api/playlists
+Content-Type: application/json
+
+{ "name":
+
+### Пустое обязательное поле, должен быть 400
+POST {{base}}/api/playlists
+Content-Type: application/json
+
+{ "name": "", "author": "Denis" }
+
+### Удалить плейлист
+DELETE {{base}}/api/playlists/1
+
+### После удаления должен быть 404
+GET {{base}}/api/playlists/1
