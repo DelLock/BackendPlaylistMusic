@@ -6,20 +6,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 from database import get_db
+from dependencies import get_current_user, get_playlist_for_write, get_playlist_or_404
 from models import (
-    DBPlaylist, DBTrack,
+    DBPlaylist, DBTrack, DBUser,
     Playlist, PlaylistCreate, PlaylistUpdate, PlaylistStats,
     Track, TrackCreate,
 )
 
 router = APIRouter(prefix="/api/playlists", tags=["playlists"])
-
-
-def _get_playlist_or_404(db: Session, playlist_id: int) -> DBPlaylist:
-    playlist = db.query(DBPlaylist).filter(DBPlaylist.id == playlist_id).first()
-    if not playlist:
-        raise HTTPException(status_code=404, detail="Playlist not found")
-    return playlist
 
 
 def _escape_like(text: str) -> str:
@@ -46,8 +40,13 @@ def _stats_query(db: Session):
 # ---------- Плейлисты ----------
 
 @router.post("", response_model=Playlist, status_code=status.HTTP_201_CREATED)
-def create_playlist(playlist: PlaylistCreate, db: Session = Depends(get_db)):
-    db_playlist = DBPlaylist(name=playlist.name, author=playlist.author)
+def create_playlist(
+    playlist: PlaylistCreate,
+    user: DBUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # owner_id ставит сервер по тому, кто вошёл. Если клиент пришлёт owner_id в теле, он игнорируется
+    db_playlist = DBPlaylist(name=playlist.name, author=playlist.author, owner_id=user.id)
     db.add(db_playlist)
     db.commit()
     db.refresh(db_playlist)
@@ -80,13 +79,16 @@ def get_all_stats(db: Session = Depends(get_db)):
 
 @router.get("/{playlist_id}", response_model=Playlist)
 def get_playlist(playlist_id: int, db: Session = Depends(get_db)):
-    return _get_playlist_or_404(db, playlist_id)
+    return get_playlist_or_404(db, playlist_id)
 
 
 @router.patch("/{playlist_id}", response_model=Playlist)
 @router.put("/{playlist_id}", response_model=Playlist, include_in_schema=False)
-def update_playlist(playlist_id: int, data: PlaylistUpdate, db: Session = Depends(get_db)):
-    playlist = _get_playlist_or_404(db, playlist_id)
+def update_playlist(
+    data: PlaylistUpdate,
+    playlist: DBPlaylist = Depends(get_playlist_for_write),
+    db: Session = Depends(get_db),
+):
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(playlist, field, value)
     db.commit()
@@ -95,8 +97,10 @@ def update_playlist(playlist_id: int, data: PlaylistUpdate, db: Session = Depend
 
 
 @router.delete("/{playlist_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_playlist(playlist_id: int, db: Session = Depends(get_db)):
-    playlist = _get_playlist_or_404(db, playlist_id)
+def delete_playlist(
+    playlist: DBPlaylist = Depends(get_playlist_for_write),
+    db: Session = Depends(get_db),
+):
     db.delete(playlist)
     db.commit()
 
@@ -104,8 +108,12 @@ def delete_playlist(playlist_id: int, db: Session = Depends(get_db)):
 # ---------- Треки плейлиста ----------
 
 @router.post("/{playlist_id}/tracks", response_model=Track, status_code=status.HTTP_201_CREATED)
-def add_track(playlist_id: int, track_in: TrackCreate, db: Session = Depends(get_db)):
-    _get_playlist_or_404(db, playlist_id)
+def add_track(
+    track_in: TrackCreate,
+    playlist: DBPlaylist = Depends(get_playlist_for_write),
+    db: Session = Depends(get_db),
+):
+    playlist_id = playlist.id
 
     duplicate = db.query(DBTrack.id).filter(
         DBTrack.playlist_id == playlist_id,
@@ -139,15 +147,18 @@ def add_track(playlist_id: int, track_in: TrackCreate, db: Session = Depends(get
 
 @router.get("/{playlist_id}/tracks", response_model=List[Track])
 def get_tracks(playlist_id: int, db: Session = Depends(get_db)):
-    playlist = _get_playlist_or_404(db, playlist_id)
+    playlist = get_playlist_or_404(db, playlist_id)
     return playlist.tracks
 
 
 @router.delete("/{playlist_id}/tracks/{track_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_track(playlist_id: int, track_id: int, db: Session = Depends(get_db)):
-    _get_playlist_or_404(db, playlist_id)
+def delete_track(
+    track_id: int,
+    playlist: DBPlaylist = Depends(get_playlist_for_write),
+    db: Session = Depends(get_db),
+):
     track = db.query(DBTrack).filter(
-        DBTrack.id == track_id, DBTrack.playlist_id == playlist_id
+        DBTrack.id == track_id, DBTrack.playlist_id == playlist.id
     ).first()
     if not track:
         raise HTTPException(status_code=404, detail="Track not found in this playlist")
@@ -157,5 +168,5 @@ def delete_track(playlist_id: int, track_id: int, db: Session = Depends(get_db))
 
 @router.get("/{playlist_id}/stats", response_model=PlaylistStats)
 def get_playlist_stats(playlist_id: int, db: Session = Depends(get_db)):
-    _get_playlist_or_404(db, playlist_id)
+    get_playlist_or_404(db, playlist_id)
     return _stats_query(db).filter(DBPlaylist.id == playlist_id).one()

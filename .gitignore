@@ -23,3 +23,6 @@ Thumbs.db
 # Базы
 *.db
 *.sqlite3
+
+# Visual Studio
+.vs/

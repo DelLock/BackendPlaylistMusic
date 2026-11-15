@@ -1,9 +1,93 @@
 @base = http://localhost:8000
+# Логины и пароли для примеров. Админа создаёт `python seed.py` из .env
+@user = denis
+@pass = denis-pass-123
+@user2 = anna
+@pass2 = anna-pass-123
+@admin = admin
+@adminpass = admin-test-pass
 
 ### Сервис жив?
 GET {{base}}/health
 
-### Создать плейлист
+# ===================== Пользователи =====================
+
+### Регистрация, 201
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{
+    "username": "{{user}}",
+    "password": "{{pass}}"
+}
+
+### Регистрация второго пользователя, 201
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{
+    "username": "{{user2}}",
+    "password": "{{pass2}}"
+}
+
+### Тот же логин второй раз, должен быть 409
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{
+    "username": "{{user}}",
+    "password": "{{pass}}"
+}
+
+### Кто я (Basic Auth), 200 без пароля и хэша
+GET {{base}}/auth/me
+Authorization: Basic {{user}} {{pass}}
+
+### Без авторизации, должен быть 401
+GET {{base}}/auth/me
+
+### Неверный пароль, должен быть 401
+GET {{base}}/auth/me
+Authorization: Basic {{user}} wrong-password
+
+### Вход, JWT в ответе
+# @name login
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{
+    "username": "{{user}}",
+    "password": "{{pass}}"
+}
+
+###
+@token = {{login.response.body.access_token}}
+
+### Кто я (JWT), 200
+GET {{base}}/auth/me
+Authorization: Bearer {{token}}
+
+### Подделанный токен, должен быть 401
+GET {{base}}/auth/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIn0.invalid
+
+# ===================== Плейлисты =====================
+
+### Создать плейлист (нужен вход), 201, owner_id ставит сервер
+# @name created
+POST {{base}}/api/playlists
+Authorization: Basic {{user}} {{pass}}
+Content-Type: application/json
+
+{
+    "name": "Rock Music",
+    "author": "Denis"
+}
+
+###
+@id = {{created.response.body.id}}
+
+### Создать без входа, должен быть 401
 POST {{base}}/api/playlists
 Content-Type: application/json
 
@@ -12,7 +96,7 @@ Content-Type: application/json
     "author": "Denis"
 }
 
-### Список плейлистов
+### Список плейлистов (читать можно без входа)
 GET {{base}}/api/playlists
 
 ### Список с пагинацией и фильтром по автору
@@ -22,18 +106,38 @@ GET {{base}}/api/playlists?limit=5&offset=0&author=Denis
 GET {{base}}/api/playlists?q=rock
 
 ### Получить один плейлист
-GET {{base}}/api/playlists/1
+GET {{base}}/api/playlists/{{id}}
 
-### Изменить плейлист
-PATCH {{base}}/api/playlists/1
+### Изменить свой плейлист, 200
+PATCH {{base}}/api/playlists/{{id}}
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
     "name": "Classic Rock"
 }
 
+### Изменить чужой плейлист (вошёл второй пользователь), должен быть 403
+PATCH {{base}}/api/playlists/{{id}}
+Authorization: Basic {{user2}} {{pass2}}
+Content-Type: application/json
+
+{
+    "name": "Взлом"
+}
+
+### Админ может изменить любой плейлист, 200
+PATCH {{base}}/api/playlists/{{id}}
+Authorization: Basic {{admin}} {{adminpass}}
+Content-Type: application/json
+
+{
+    "name": "Classic Rock (админ)"
+}
+
 ### Добавить трек
-POST {{base}}/api/playlists/1/tracks
+POST {{base}}/api/playlists/{{id}}/tracks
+Authorization: Basic {{user}} {{pass}}
 Content-Type: application/json
 
 {
@@ -43,7 +147,8 @@ Content-Type: application/json
 }
 
 ### Тот же трек второй раз, должен быть 409
-POST {{base}}/api/playlists/1/tracks
+POST {{base}}/api/playlists/{{id}}/tracks
+Authorization: Basic {{user}} {{pass}}
 Content-Type: application/json
 
 {
@@ -52,8 +157,20 @@ Content-Type: application/json
     "duration": 354
 }
 
+### Добавить трек в чужой плейлист, должен быть 403
+POST {{base}}/api/playlists/{{id}}/tracks
+Authorization: Basic {{user2}} {{pass2}}
+Content-Type: application/json
+
+{
+    "title": "Radio Ga Ga",
+    "artist": "Queen",
+    "duration": 343
+}
+
 ### Добавить второй трек
-POST {{base}}/api/playlists/1/tracks
+POST {{base}}/api/playlists/{{id}}/tracks
+Authorization: Basic {{user}} {{pass}}
 Content-Type: application/json
 
 {
@@ -63,31 +180,51 @@ Content-Type: application/json
 }
 
 ### Список треков плейлиста
-GET {{base}}/api/playlists/1/tracks
+GET {{base}}/api/playlists/{{id}}/tracks
 
 ### Статистика одного плейлиста
-GET {{base}}/api/playlists/1/stats
+GET {{base}}/api/playlists/{{id}}/stats
 
 ### Статистика по всем плейлистам
 GET {{base}}/api/playlists/stats
 
 ### Удалить трек
-DELETE {{base}}/api/playlists/1/tracks/2
+DELETE {{base}}/api/playlists/{{id}}/tracks/2
+Authorization: Basic {{user}} {{pass}}
 
 ### Сломанный JSON, должен быть 400
 POST {{base}}/api/playlists
+Authorization: Basic {{user}} {{pass}}
 Content-Type: application/json
 
 { "name":
 
 ### Пустое обязательное поле, должен быть 400
 POST {{base}}/api/playlists
+Authorization: Basic {{user}} {{pass}}
 Content-Type: application/json
 
 { "name": "", "author": "Denis" }
 
-### Удалить плейлист
-DELETE {{base}}/api/playlists/1
+### Удалить чужой плейлист, должен быть 403
+DELETE {{base}}/api/playlists/{{id}}
+Authorization: Basic {{user2}} {{pass2}}
+
+### Удалить свой плейлист, 204
+DELETE {{base}}/api/playlists/{{id}}
+Authorization: Basic {{user}} {{pass}}
 
 ### После удаления должен быть 404
-GET {{base}}/api/playlists/1
+GET {{base}}/api/playlists/{{id}}
+
+# ===================== Лимит попыток входа =====================
+# Отправить подряд 6 раз: первые 5 дают 401, шестой даёт 429 и заголовок Retry-After
+
+### Неверный пароль
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{
+    "username": "{{user2}}",
+    "password": "wrong-password"
+}

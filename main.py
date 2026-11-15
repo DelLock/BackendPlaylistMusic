@@ -6,7 +6,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from routers import playlists
+from routers import auth, playlists
 
 app = FastAPI(title="Music Playlist API")
 
@@ -42,9 +42,15 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
 
 @app.exception_handler(StarletteHTTPException)
 async def http_error_handler(request: Request, exc: StarletteHTTPException):
-    return JSONResponse(status_code=exc.status_code, content={"error": str(exc.detail)})
+    # headers нужны для WWW-Authenticate (401) и Retry-After (429)
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": str(exc.detail)},
+        headers=getattr(exc, "headers", None),
+    )
 
 
+app.include_router(auth.router)
 app.include_router(playlists.router)
 
 
