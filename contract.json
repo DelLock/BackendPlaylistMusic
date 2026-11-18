@@ -4,28 +4,84 @@
   "id_field": "id",
   "missing_id": "999999",
   "list_key": null,
-  "create": { "name": "Rock Music", "author": "Denis" },
-  "update": { "name": "Classic Rock" },
+  "create": {
+    "name": "Rock Music",
+    "author": "Denis"
+  },
+  "update": {
+    "name": "Classic Rock"
+  },
   "required_field": "name",
   "errors": [
-    { "body": { "name": "" }, "field": "name" },
-    { "body": { "author": "" }, "field": "author" }
+    {
+      "body": {
+        "name": ""
+      },
+      "field": "name"
+    },
+    {
+      "body": {
+        "author": ""
+      },
+      "field": "author"
+    }
   ],
-  "filter": { "param": "author", "value": "Denis", "other": "Ivan" },
+  "filter": {
+    "param": "author",
+    "value": "Denis",
+    "other": "Ivan"
+  },
   "text_field": "name",
-  "search": { "param": "q", "field": "name" },
+  "search": {
+    "param": "q",
+    "field": "name"
+  },
   "child": {
     "resource": "tracks",
-    "create": { "title": "Bohemian Rhapsody", "artist": "Queen", "duration": 354 },
+    "create": {
+      "title": "Bohemian Rhapsody",
+      "artist": "Queen",
+      "duration": 354
+    },
     "parent_field": "playlist_id"
   },
   "rule": {
     "description": "Нельзя добавить в плейлист один и тот же трек дважды",
     "setup": [
-      { "method": "POST", "path": "/api/playlists/{id}/tracks", "body": { "title": "Radio Ga Ga", "artist": "Queen", "duration": 343 } }
+      {
+        "method": "POST",
+        "path": "/api/playlists/{id}/tracks",
+        "body": {
+          "title": "Radio Ga Ga",
+          "artist": "Queen",
+          "duration": 343
+        }
+      }
     ],
-    "violate": { "method": "POST", "path": "/api/playlists/{id}/tracks", "body": { "title": "Radio Ga Ga", "artist": "Queen", "duration": 343 } },
+    "violate": {
+      "method": "POST",
+      "path": "/api/playlists/{id}/tracks",
+      "body": {
+        "title": "Radio Ga Ga",
+        "artist": "Queen",
+        "duration": 343
+      }
+    },
     "expect_status": 409
   },
-  "stats_path": "/api/playlists/stats"
+  "stats_path": "/api/playlists/stats",
+  "auth": {
+    "scheme": "basic",
+    "register_path": "/auth/register",
+    "login_path": "/auth/login",
+    "me_path": "/auth/me",
+    "login_field": "username",
+    "password_field": "password",
+    "token_field": "access_token",
+    "owner_field": "owner_id",
+    "admin": {
+      "username": "admin",
+      "password": "admin-test-pass"
+    }
+  }
 }
